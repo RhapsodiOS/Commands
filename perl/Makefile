@@ -10,19 +10,20 @@ Project             = perl
 UserType            = Developer
 ToolType            = Commands
 Configure           = $(BuildDirectory)/Configure
-Extra_Environment   = HTMLDIR="$(Install_HTML)"						\
+Extra_Environment   = HTMLDIR="$(Install_HTML)"	\
 		      AR="$(SRCROOT)/ar.sh"  DYLD_LIBRARY_PATH=$(BuildDirectory)
 Extra_Install_Flags = HTMLDIR="$(RC_Install_HTML)" HTMLROOT=$(Install_HTML)
-GnuAfterInstall     = undo-dstroot-hack
+GnuAfterInstall     = undo-dstroot-hack zap-sitedirs
+Extra_CC_Flags      = -Wno-precomp -fno-common -DHAS_TELLDIR_PROTOTYPE
 
 # It's a GNU Source project
 # Well, not really but we can make it work.
 include $(MAKEFILEPATH)/CoreOS/ReleaseControl/GNUSource.make
 
-Install_Target  = install
+Install_Target  = install-strip
 CC_Optimize     = 
 Extra_CC_Flags  = 
-Configure_Flags = -des -Dusemymalloc='n' -Dso='dylib' -Dlibc='/System/Library/Frameworks/System.framework/System' -Dprefix='$(Install_Prefix)' -Dccflags='$(CFLAGS)' -Dldflags='$(LDFLAGS)'
+Configure_Flags = -ds -e -Dprefix='$(Install_Prefix)' -Dccflags='$(CFLAGS)' -Dldflags='$(LDFLAGS)' -Dlibc='/System/Library/Frameworks/System.framework/System' -Dso='dylib' -Dprivlib='/System/Library/Perl' -Dsitelib='/Local/Library/Perl' -Dvendorlib='/Network/Library/Perl' -Dusemymalloc='n'
 
 ##
 # Eit. Getting perl to compile outside of the source tree is a severe pain.
@@ -67,10 +68,13 @@ $(ConfigStamp2): $(ConfigStamp)
 # on those systems.  This means modules are build thin by default.
 ##
 MINIPERL = export DYLD_LIBRARY_PATH="$(BuildDirectory)"; "$(BuildDirectory)/miniperl"
-CONFIGPM = $(DSTROOT)/System/Library/Perl/$$($(MINIPERL) -v | grep 'This is perl' | awk '{print $$8}')/Config.pm
+CONFIGPM = $(DSTROOT)/System/Library/Perl/$$($(MINIPERL) -v | grep 'This is perl' | awk '{print $$7}')/Config.pm
 
 undo-dstroot-hack:
 	$(_v) echo "Fixing $(CONFIGPM)"
 	$(_v) $(CAT) $(CONFIGPM) | $(SED) 's@^\(install[^=]*='\''\)$(DSTROOT)@\1@' > /tmp/build.perl.$(UNIQUE)
 	$(_v) $(MINIPERL) -i -pe 's|-arch\s+\S+\s*||g' /tmp/build.perl.$(UNIQUE)
 	$(_v) $(MV) -f /tmp/build.perl.$(UNIQUE) $(CONFIGPM)
+
+zap-sitedirs:
+	$(_v) $(RMDIR) $(DSTROOT)$(NSLOCALDIR)$(NSLIBRARYSUBDIR)
