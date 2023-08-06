@@ -3953,6 +3953,7 @@ posix_ftruncate(PyObject *self, PyObject *args)
 }
 #endif
 
+#if 0
 #ifdef NeXT
 #define HAVE_PUTENV
 /* Steve Spicklemire got this putenv from NeXTAnswers */
@@ -4030,7 +4031,7 @@ putenv(char *newval)
 	return 0;
 }
 #endif /* NeXT */
-
+#endif
 
 #ifdef HAVE_PUTENV
 static char posix_putenv__doc__[] =
